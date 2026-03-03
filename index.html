@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gamehub - Arackal Abu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎮 GAMEHUB</h1>
+        <h2>Arackal Abu</h2>
+        <p>Training Ground Combat Arena</p>
+        <p>Total Coins: <span id="coinCount">0</span> 🪙</p>
+    </div>
+
+    <div class="hero-section">
+        <img src="assets/hero.png" class="hero">
+    </div>
+
+    <div class="menu">
+        <button onclick="startGame()">⚔ ENTER TRAINING GROUND</button>
+    </div>
+
+<script>
+    // Initialize coins if not set
+    if (!localStorage.getItem("coins")) {
+        localStorage.setItem("coins", 0);
+    }
+
+    // Display coins
+    document.getElementById("coinCount").innerText = localStorage.getItem("coins");
+
+    function startGame() {
+        window.location.href = "games/training.html";
+    }
+
+</script>
+</body>
+</html>
