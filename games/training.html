@@ -59,15 +59,17 @@ function shoot(){
     let width = player.size;
     let height = width / aspect;
 
-    // Nose in rotated direction
+    // Nose position (forward direction)
     let noseX = player.x + Math.cos(player.angle - Math.PI/2) * (height/2);
     let noseY = player.y + Math.sin(player.angle - Math.PI/2) * (height/2);
+
+    let bulletSpeed = 10;
 
     bullets.push({
         x:noseX,
         y:noseY,
-        dx:0,      // always vertical
-        dy:-10,
+        dx:Math.cos(player.angle - Math.PI/2) * bulletSpeed,
+        dy:Math.sin(player.angle - Math.PI/2) * bulletSpeed,
         size:bulletSize
     });
 }
@@ -101,7 +103,7 @@ function update(){
     player.x=Math.max(player.size/2,Math.min(canvas.width-player.size/2,player.x));
     player.y=Math.max(player.size/2,Math.min(canvas.height-player.size/2,player.y));
 
-    // ROTATION TOWARD MOUSE
+    // ROTATE TOWARD MOUSE
     player.angle = Math.atan2(mouse.y-player.y, mouse.x-player.x) + Math.PI/2;
 
     // BULLETS
@@ -110,7 +112,8 @@ function update(){
         b.x+=b.dx;
         b.y+=b.dy;
 
-        if(b.y<0){
+        // remove if off screen
+        if(b.x<0 || b.x>canvas.width || b.y<0 || b.y>canvas.height){
             bullets.splice(i,1);
             continue;
         }
@@ -175,7 +178,7 @@ function draw(){
         ctx.fill();
     });
 
-    // CRACKS
+    // CRACK EFFECT
     cracks.forEach(c=>{
         ctx.strokeStyle="white";
         ctx.beginPath();
