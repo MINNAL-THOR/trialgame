@@ -127,6 +127,8 @@ let player = {
 let bullets = [];
 let enemies = [];
 let particles = [];
+let cracks = [];   // 🔥 NEW: crack storage
+
 let keys = {};
 let mouse = {x:0,y:0};
 let wave = 1;
@@ -194,6 +196,15 @@ function update(){
             if(Math.hypot(b.x-e.x,b.y-e.y)<25){
 
                 e.health -= bulletDamage;
+
+                // 🔥 Add crack effect
+                cracks.push({
+                    x:e.x,
+                    y:e.y,
+                    life:12,
+                    size:e.size/2
+                });
+
                 bullets.splice(bi,1);
 
                 if(e.health<=0){
@@ -216,6 +227,14 @@ function update(){
 
                 break;
             }
+        }
+    }
+
+    // Update cracks
+    for(let ci = cracks.length-1; ci>=0; ci--){
+        cracks[ci].life--;
+        if(cracks[ci].life<=0){
+            cracks.splice(ci,1);
         }
     }
 
@@ -292,6 +311,25 @@ function draw(){
         ctx.fill();
     });
 
+    // 🔥 Draw cracks
+    cracks.forEach(c=>{
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        for(let i=0;i<6;i++){
+            let angle = Math.random()*Math.PI*2;
+            let length = Math.random()*c.size;
+            ctx.moveTo(c.x,c.y);
+            ctx.lineTo(
+                c.x + Math.cos(angle)*length,
+                c.y + Math.sin(angle)*length
+            );
+        }
+
+        ctx.stroke();
+    });
+
     ctx.fillStyle="orange";
     particles.forEach(p=>{
         ctx.beginPath();
@@ -307,6 +345,7 @@ function restartGame(){
     bullets=[];
     enemies=[];
     particles=[];
+    cracks=[];
     wave=1;
     gameOver=false;
     document.getElementById("health").innerText=100;
