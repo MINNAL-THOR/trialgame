@@ -6,33 +6,80 @@
 </head>
 <body>
 
-    <div class="header">
-        <h1>🎮 GAMEHUB</h1>
-        <h2>Arackal Abu</h2>
-        <p>Training Ground Combat Arena</p>
-        <p>Total Coins: <span id="coinCount">0</span> 🪙</p>
-    </div>
+<div class="header">
+    <h1>🎮 GAMEHUB</h1>
+    <h2>Arackal Abu</h2>
+    <p>Total Coins: <span id="coinCount">0</span> 🪙</p>
+</div>
 
-    <div class="hero-section">
-        <img src="assets/hero.png" class="hero">
-    </div>
+<div class="hero-section">
+    <img src="assets/hero.png" class="hero">
+</div>
 
-    <div class="menu">
-        <button onclick="startGame()">⚔ ENTER TRAINING GROUND</button>
-    </div>
+<div class="menu">
+    <button onclick="startGame()">⚔ ENTER TRAINING GROUND</button>
+    <button onclick="toggleShop()">🛒 CUSTOMIZE BULLET</button>
+</div>
+
+<div id="shop" style="display:none; margin-top:20px;">
+    <h2>Bullet Upgrades</h2>
+
+    <button onclick="selectBullet('default')">Default (Free)</button>
+
+    <button onclick="buyOrEquip('rare',1000)">Rare - 1000 Coins</button>
+    <button onclick="buyOrEquip('epic',2000)">Epic - 2000 Coins</button>
+    <button onclick="buyOrEquip('legendary',3000)">Legendary - 3000 Coins</button>
+
+    <p id="shopMessage"></p>
+</div>
 
 <script>
-    // Initialize coins if not set
-    if (!localStorage.getItem("coins")) {
-        localStorage.setItem("coins", 0);
+
+if (!localStorage.getItem("coins")) localStorage.setItem("coins", 0);
+if (!localStorage.getItem("ownedBullets")) localStorage.setItem("ownedBullets", JSON.stringify(["default"]));
+if (!localStorage.getItem("equippedBullet")) localStorage.setItem("equippedBullet", "default");
+
+document.getElementById("coinCount").innerText = localStorage.getItem("coins");
+
+function startGame(){
+    window.location.href="games/training.html";
+}
+
+function toggleShop(){
+    let shop=document.getElementById("shop");
+    shop.style.display=shop.style.display==="none"?"block":"none";
+}
+
+function selectBullet(type){
+    localStorage.setItem("equippedBullet",type);
+    document.getElementById("shopMessage").innerText="Equipped!";
+}
+
+function buyOrEquip(type,price){
+
+    let coins=parseInt(localStorage.getItem("coins"));
+    let owned=JSON.parse(localStorage.getItem("ownedBullets"));
+
+    if(owned.includes(type)){
+        localStorage.setItem("equippedBullet",type);
+        document.getElementById("shopMessage").innerText="Equipped!";
+        return;
     }
 
-    // Display coins
-    document.getElementById("coinCount").innerText = localStorage.getItem("coins");
+    if(coins>=price){
+        coins-=price;
+        owned.push(type);
 
-    function startGame() {
-        window.location.href = "games/training.html";
+        localStorage.setItem("coins",coins);
+        localStorage.setItem("ownedBullets",JSON.stringify(owned));
+        localStorage.setItem("equippedBullet",type);
+
+        document.getElementById("coinCount").innerText=coins;
+        document.getElementById("shopMessage").innerText="Purchased & Equipped!";
+    }else{
+        document.getElementById("shopMessage").innerText="Not enough coins!";
     }
+}
 
 </script>
 </body>
