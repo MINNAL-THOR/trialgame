@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Runner Mode - Arackal Abu</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            background: #222;
+            display: block;
+            margin: auto;
+        }
+
+        .top-ui {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+        }
+
+        a {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-ui">
+    🪙 Coins: <span id="coinDisplay">0</span>
+</div>
+
+<canvas id="gameCanvas" width="900" height="400"></canvas>
+
+<a href="../index.html">⬅ Back to Gamehub</a>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let heroImg = new Image();
+heroImg.src = "../assets/hero.png";
+
+let player = {
+    x: 100,
+    y: 300,
+    width: 60,
+    height: 80,
+    velocityY: 0,
+    jumping: false
+};
+
+let gravity = 1.2;
+let obstacles = [];
+let coins = [];
+let speed = 6;
+let totalCoins = parseInt(localStorage.getItem("coins")) || 0;
+
+document.getElementById("coinDisplay").innerText = totalCoins;
+
+document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !player.jumping) {
+        player.velocityY = -18;
+        player.jumping = true;
+    }
+});
+
+function spawnObstacle() {
+    obstacles.push({
+        x: canvas.width,
+        y: 320,
+        width: 30,
+        height: 60
+    });
+}
+
+function spawnCoin() {
+    coins.push({
+        x: canvas.width,
+        y: 260,
+        size: 20
+    });
+}
+
+setInterval(spawnObstacle, 2000);
+setInterval(spawnCoin, 2500);
+
+function update() {
+    player.velocityY += gravity;
+    player.y += player.velocityY;
+
+    if (player.y >= 300) {
+        player.y = 300;
+        player.jumping = false;
+    }
+
+    obstacles.forEach((obs, i) => {
+        obs.x -= speed;
+
+        if (
+            player.x < obs.x + obs.width &&
+            player.x + player.width > obs.x &&
+            player.y < obs.y + obs.height &&
+            player.y + player.height > obs.y
+        ) {
+            alert("Game Over!");
+            location.reload();
+        }
+    });
+
+    coins.forEach((coin, i) => {
+        coin.x -= speed;
+
+        if (
+            player.x < coin.x + coin.size &&
+            player.x + player.width > coin.x &&
+            player.y < coin.y + coin.size &&
+            player.y + player.height > coin.y
+        ) {
+            coins.splice(i, 1);
+            totalCoins += 5;
+            localStorage.setItem("coins", totalCoins);
+            document.getElementById("coinDisplay").innerText = totalCoins;
+        }
+    });
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(heroImg, player.x, player.y, player.width, player.height);
+
+    ctx.fillStyle = "red";
+    obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
+
+    ctx.fillStyle = "gold";
+    coins.forEach(coin => ctx.fillRect(coin.x, coin.y, coin.size, coin.size));
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>

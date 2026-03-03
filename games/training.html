@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Abu's Training Ground</title>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #0f0f0f;
+    font-family: Arial;
+    color: white;
+}
+canvas { display: block; }
+
+.ui {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    font-size: 18px;
+}
+
+#gameOverScreen, #startScreen, #shopScreen {
+    display:none;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#111;
+    padding:40px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 25px black;
+}
+
+button {
+    padding:10px 20px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="ui">
+❤️ <span id="health">100</span>
+| 🌊 <span id="wave">1</span>
+| 🪙 <span id="coins">0</span>
+<button onclick="openShop()">Customize</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="startScreen">
+    <h2>⚔ Abu's Training Ground</h2>
+    <button onclick="startGame()">Start</button>
+</div>
+
+<div id="gameOverScreen">
+    <h2>💀 Game Over</h2>
+    <button onclick="restartGame()">Restart</button>
+    <button onclick="goHome()">Home</button>
+</div>
+
+<div id="shopScreen">
+    <h3>💎 Bullet Shop</h3>
+
+    <button onclick="buyUpgrade('yellow',1,0)">
+        Basic (Free)
+    </button>
+
+    <button onclick="buyUpgrade('cyan',2,1000)">
+        Rare - 1000🪙
+    </button>
+
+    <button onclick="buyUpgrade('purple',3,3000)">
+        Epic - 3000🪙
+    </button>
+
+    <button onclick="buyUpgrade('gold',5,5000)">
+        Legendary - 5000🪙
+    </button>
+
+    <br>
+    <button onclick="closeShop()">Close</button>
+</div>
+
+<script>
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let heroImg = new Image();
+heroImg.src = "../assets/hero.png";
+
+let bulletColor = localStorage.getItem("bulletColor") || "yellow";
+let bulletDamage = parseInt(localStorage.getItem("bulletDamage")) || 1;
+
+let coins = parseInt(localStorage.getItem("coins")) || 0;
+document.getElementById("coins").innerText = coins;
+
+let player = {
+    x: canvas.width/2,
+    y: canvas.height/2,
+    size: 220,
+    speed: 4,
+    health: 100
+};
+
+let bullets = [];
+let enemies = [];
+let particles = [];
+let keys = {};
+let mouse = {x:0,y:0};
+let wave = 1;
+let gameOver = true;
+
+document.getElementById("startScreen").style.display="block";
+
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+document.addEventListener("mousemove", e=>{
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+document.addEventListener("click", ()=> shoot());
+
+function startGame(){
+    document.getElementById("startScreen").style.display="none";
+    gameOver=false;
+}
+
+function openShop(){
+    document.getElementById("shopScreen").style.display="block";
+    gameOver=true;
+}
+
+function closeShop(){
+    document.getElementById("shopScreen").style.display="none";
+    gameOver=false;
+}
+
+function buyUpgrade(color,damage,price){
+    if(coins>=price){
+        coins-=price;
+        localStorage.setItem("coins",coins);
+        document.getElementById("coins").innerText=coins;
+
+        bulletColor=color;
+        bulletDamage=damage;
+
+        localStorage.setItem("bulletColor",color);
+        localStorage.setItem("bulletDamage",damage);
+    } else {
+        alert("Not enough coins!");
+    }
+}
+
+function shoot(){
+    if(gameOver) return;
+
+    let angle = Math.atan2(mouse.y-player.y, mouse.x-player.x);
+
+    bullets.push({
+        x:player.x,
+        y:player.y,
+        dx:Math.cos(angle)*8,
+        dy:Math.sin(angle)*8,
+        size:8
+    });
+
+    for(let i=0;i<5;i++){
+        particles.push({
+            x:player.x,
+            y:player.y,
+            dx:(Math.random()-0.5)*3,
+            dy:(Math.random()-0.5)*3,
+            life:20
+        });
+    }
+}
+
+function spawnEnemy(){
+
+    let edge = Math.floor(Math.random()*4);
+    let x,y;
+
+    if(edge===0){x=0;y=Math.random()*canvas.height;}
+    if(edge===1){x=canvas.width;y=Math.random()*canvas.height;}
+    if(edge===2){x=Math.random()*canvas.width;y=0;}
+    if(edge===3){x=Math.random()*canvas.width;y=canvas.height;}
+
+    enemies.push({
+    x,y,
+    size:40,
+    speed:1.5 + wave*0.2,
+    maxHealth:3 + wave,
+    health:3 + wave,
+    cracked:0
+});
+}
+
+function update(){
+
+    if(keys["w"]) player.y -= player.speed;
+    if(keys["s"]) player.y += player.speed;
+    if(keys["a"]) player.x -= player.speed;
+    if(keys["d"]) player.x += player.speed;
+
+    bullets.forEach((b,bi)=>{
+        b.x+=b.dx;
+        b.y+=b.dy;
+
+        enemies.forEach((e,ei)=>{
+            if(Math.hypot(b.x-e.x,b.y-e.y)<25){
+
+                e.health -= bulletDamage;
+e.cracked = 1 - (e.health / e.maxHealth);
+bullets.splice(bi,1);
+
+                if(e.health<=0){
+                    enemies.splice(ei,1);
+                    coins+=5;
+                    localStorage.setItem("coins",coins);
+                    document.getElementById("coins").innerText = coins;
+                }
+            }
+        });
+    });
+
+    enemies.forEach(e=>{
+        let angle = Math.atan2(player.y-e.y, player.x-e.x);
+        e.x+=Math.cos(angle)*e.speed;
+        e.y+=Math.sin(angle)*e.speed;
+
+        if(Math.hypot(player.x-e.x,player.y-e.y)<50){
+            player.health-=0.5;
+            document.getElementById("health").innerText = Math.floor(player.health);
+        }
+    });
+
+    particles.forEach((p,pi)=>{
+        p.x+=p.dx;
+        p.y+=p.dy;
+        p.life--;
+        if(p.life<=0) particles.splice(pi,1);
+    });
+
+    if(player.health<=0 && !gameOver){
+        gameOver=true;
+        document.getElementById("gameOverScreen").style.display="block";
+    }
+
+    if(enemies.length===0 && !gameOver){
+        wave++;
+        document.getElementById("wave").innerText = wave;
+        for(let i=0;i<wave*3;i++) spawnEnemy();
+    }
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    let angle = Math.atan2(mouse.y-player.y,mouse.x-player.x);
+
+    ctx.save();
+    ctx.translate(player.x,player.y);
+    ctx.rotate(angle);
+
+    let aspect = heroImg.naturalWidth/heroImg.naturalHeight;
+    let w = player.size;
+    let h = w/aspect;
+
+    ctx.drawImage(heroImg,-w/2,-h/2,w,h);
+    ctx.restore();
+
+    if(bulletColor==="gold"){
+        ctx.shadowBlur=30;
+        ctx.shadowColor="gold";
+    }
+    if(bulletColor==="purple"){
+        ctx.shadowBlur=20;
+        ctx.shadowColor="purple";
+    }
+
+    ctx.fillStyle = bulletColor;
+
+    bullets.forEach(b=>{
+        ctx.beginPath();
+        ctx.arc(b.x,b.y,b.size,0,Math.PI*2);
+        ctx.fill();
+    });
+
+    ctx.shadowBlur=0;
+
+    particles.forEach(p=>{
+        ctx.globalAlpha = p.life/20;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,3,0,Math.PI*2);
+        ctx.fill();
+    });
+
+    ctx.globalAlpha=1;
+
+    enemies.forEach(e=>{
+
+    // Base red body
+    ctx.fillStyle="red";
+    ctx.beginPath();
+    ctx.arc(e.x,e.y,e.size/2,0,Math.PI*2);
+    ctx.fill();
+
+    // Crack effect
+    if(e.cracked > 0){
+
+        ctx.strokeStyle="black";
+        ctx.lineWidth=2;
+
+        let cracks = Math.floor(e.cracked * 6);
+
+        for(let i=0;i<cracks;i++){
+            let angle = Math.random()*Math.PI*2;
+            let length = e.size/3 + Math.random()*10;
+
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y);
+            ctx.lineTo(
+                e.x + Math.cos(angle)*length,
+                e.y + Math.sin(angle)*length
+            );
+            ctx.stroke();
+        }
+    }
+
+});
+}
+
+function restartGame(){
+    player.health=100;
+    player.x=canvas.width/2;
+    player.y=canvas.height/2;
+    bullets=[];
+    enemies=[];
+    wave=1;
+    gameOver=false;
+    document.getElementById("health").innerText=100;
+    document.getElementById("wave").innerText=1;
+    document.getElementById("gameOverScreen").style.display="none";
+    for(let i=0;i<3;i++) spawnEnemy();
+}
+
+function goHome(){
+    window.location.href="../index.html";
+}
+
+function loop(){
+    if(!gameOver){
+        update();
+        draw();
+    }
+    requestAnimationFrame(loop);
+}
+
+for(let i=0;i<3;i++) spawnEnemy();
+loop();
+
+</script>
+</body>
+</html>
