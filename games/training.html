@@ -127,7 +127,7 @@ let player = {
 let bullets = [];
 let enemies = [];
 let particles = [];
-let cracks = [];   // 🔥 NEW: crack storage
+let cracks = [];
 
 let keys = {};
 let mouse = {x:0,y:0};
@@ -137,26 +137,32 @@ let gameOver = false;
 document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
 document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-document.addEventListener("mousemove", e=>{
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-});
-
 document.addEventListener("click", ()=> shoot());
+
+/* ========= SHOOT FROM JET NOSE ========= */
 
 function shoot(){
     if(gameOver) return;
 
-    let angle = Math.atan2(mouse.y-player.y, mouse.x-player.x);
+    // Calculate scaled image height (same as draw)
+    let aspect = heroImg.naturalWidth / heroImg.naturalHeight;
+    let w = player.size;
+    let h = w / aspect;
+
+    // Nose tip (top center of jet)
+    let noseX = player.x;
+    let noseY = player.y - (h / 2);
 
     bullets.push({
-        x:player.x,
-        y:player.y,
-        dx:Math.cos(angle)*8,
-        dy:Math.sin(angle)*8,
-        size:bulletSize
+        x: noseX,
+        y: noseY,
+        dx: 0,
+        dy: -8,
+        size: bulletSize
     });
 }
+
+/* ======================================== */
 
 function spawnEnemy(){
     let edge = Math.floor(Math.random()*4);
@@ -197,7 +203,6 @@ function update(){
 
                 e.health -= bulletDamage;
 
-                // 🔥 Add crack effect
                 cracks.push({
                     x:e.x,
                     y:e.y,
@@ -230,12 +235,9 @@ function update(){
         }
     }
 
-    // Update cracks
     for(let ci = cracks.length-1; ci>=0; ci--){
         cracks[ci].life--;
-        if(cracks[ci].life<=0){
-            cracks.splice(ci,1);
-        }
+        if(cracks[ci].life<=0) cracks.splice(ci,1);
     }
 
     for(let pi = particles.length-1; pi>=0; pi--){
@@ -279,11 +281,8 @@ function draw(){
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    let angle = Math.atan2(mouse.y-player.y,mouse.x-player.x);
-
     ctx.save();
     ctx.translate(player.x,player.y);
-    ctx.rotate(angle);
 
     let aspect = heroImg.naturalWidth/heroImg.naturalHeight;
     let w = player.size;
@@ -311,12 +310,10 @@ function draw(){
         ctx.fill();
     });
 
-    // 🔥 Draw cracks
     cracks.forEach(c=>{
         ctx.strokeStyle = "white";
         ctx.lineWidth = 2;
         ctx.beginPath();
-
         for(let i=0;i<6;i++){
             let angle = Math.random()*Math.PI*2;
             let length = Math.random()*c.size;
@@ -326,7 +323,6 @@ function draw(){
                 c.y + Math.sin(angle)*length
             );
         }
-
         ctx.stroke();
     });
 
