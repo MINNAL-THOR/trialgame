@@ -22,6 +22,16 @@ let player = {
 let bullets = [];
 let keys = {};
 
+/* ================= MOBILE CONTROL VARIABLES ================= */
+
+let isTouch = "ontouchstart" in window;
+
+let leftTouch = null;
+let rightTouch = null;
+
+let leftStart = {x:0,y:0};
+let rightStart = {x:0,y:0};
+
 /* ================= INPUT ================= */
 
 document.addEventListener("mousemove", (e)=>{
@@ -32,7 +42,76 @@ document.addEventListener("mousemove", (e)=>{
 
 document.addEventListener("keydown", e=> keys[e.key.toLowerCase()] = true);
 document.addEventListener("keyup", e=> keys[e.key.toLowerCase()] = false);
+
 document.addEventListener("click", shoot);
+
+/* ================= MOBILE TOUCH CONTROLS ================= */
+
+canvas.addEventListener("touchstart", (e)=>{
+
+    for(let t of e.changedTouches){
+
+        if(t.clientX < canvas.width/2 && leftTouch === null){
+            leftTouch = t.identifier;
+            leftStart.x = t.clientX;
+            leftStart.y = t.clientY;
+        }
+
+        else if(t.clientX >= canvas.width/2 && rightTouch === null){
+            rightTouch = t.identifier;
+            rightStart.x = t.clientX;
+            rightStart.y = t.clientY;
+        }
+
+    }
+
+});
+
+canvas.addEventListener("touchmove", (e)=>{
+
+    for(let t of e.changedTouches){
+
+        /* LEFT JOYSTICK MOVEMENT */
+
+        if(t.identifier === leftTouch){
+
+            let dx = t.clientX - leftStart.x;
+            let dy = t.clientY - leftStart.y;
+
+            player.x += dx * 0.05;
+            player.y += dy * 0.05;
+
+            leftStart.x = t.clientX;
+            leftStart.y = t.clientY;
+        }
+
+        /* RIGHT JOYSTICK AIM */
+
+        if(t.identifier === rightTouch){
+
+            mouse.x = t.clientX;
+            mouse.y = t.clientY;
+        }
+
+    }
+
+});
+
+canvas.addEventListener("touchend", (e)=>{
+
+    for(let t of e.changedTouches){
+
+        if(t.identifier === leftTouch){
+            leftTouch = null;
+        }
+
+        if(t.identifier === rightTouch){
+            rightTouch = null;
+        }
+
+    }
+
+});
 
 /* ================= SHOOT ================= */
 
@@ -42,7 +121,6 @@ function shoot(){
     let width = player.size;
     let height = width / aspect;
 
-    // Since jet faces UP, forward direction = angle - PI/2
     let forward = player.angle - Math.PI/2;
 
     let noseX = player.x + Math.cos(forward) * (height/2);
@@ -63,24 +141,30 @@ function shoot(){
 
 function update(){
 
+    /* DESKTOP MOVEMENT */
+
     if(keys["w"]) player.y -= player.speed;
     if(keys["s"]) player.y += player.speed;
     if(keys["a"]) player.x -= player.speed;
     if(keys["d"]) player.x += player.speed;
 
-    // THIS is the correct rotation logic
     player.angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
 
-    // Move bullets
+    /* BULLET MOVEMENT */
+
     for(let i=bullets.length-1;i>=0;i--){
+
         let b = bullets[i];
+
         b.x += b.dx;
         b.y += b.dy;
 
         if(b.x<0 || b.x>canvas.width || b.y<0 || b.y>canvas.height){
             bullets.splice(i,1);
         }
+
     }
+
 }
 
 /* ================= DRAW ================= */
@@ -89,11 +173,10 @@ function draw(){
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Draw rotated jet
     ctx.save();
+
     ctx.translate(player.x, player.y);
 
-    // + PI/2 because PNG faces UP
     ctx.rotate(player.angle + Math.PI/2);
 
     let aspect = heroImg.naturalWidth / heroImg.naturalHeight;
@@ -104,13 +187,14 @@ function draw(){
 
     ctx.restore();
 
-    // Bullets
     ctx.fillStyle = "yellow";
+
     bullets.forEach(b=>{
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.size, 0, Math.PI*2);
         ctx.fill();
     });
+
 }
 
 /* ================= LOOP ================= */
